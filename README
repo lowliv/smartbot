@@ -1,0 +1,10 @@
+Refrences: https://platform.openai.com/docs/guides/vision
+
+System Dependancies:
+- wayland
+- ydotool
+- hyrshot
+
+Run sudo -b ydotoold --socket-path="$HOME/.ydotool_socket" --socket-own="$(id -u):$(id -g)" before starting
+Put answer choice png in $HOME/.cache/smartbot/templates/cirle.png
+Put api-key as environment variable called GPT_KEY
