@@ -9,6 +9,7 @@ opencv-python = "*"
 numpy = "*"
 setuptools = "*"
 pyinstaller = "*"
+pyqt6 = "*"
 
 [dev-packages]
 

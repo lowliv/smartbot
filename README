@@ -4,7 +4,10 @@ System Dependancies:
 - wayland
 - ydotool
 - hyprshot
+- notify-send
+- any notification manager
 
 Run sudo -b ydotoold --socket-path="$HOME/.ydotool_socket" --socket-own="$(id -u):$(id -g)" before starting
 Put answer choice png in $HOME/.cache/smartbot/templates/cirle.png
-Put api-key as environment variable called GPT_KEY
+Put api-key in environment variable called GPT_KEY
+Put screenscale value in evironment variable called SCREEN_SCALE (defaults to 1)
