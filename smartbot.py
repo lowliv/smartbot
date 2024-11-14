@@ -25,7 +25,7 @@ def on_ok_click(window):
   
 def on_cancel_click(window):
   window.close()
-  exit()
+  sys.exit()
 
 def get_confirmation(ok_button_label, cancel_button_label, ok_button_style, cancel_button_style, label_style, window_style, font_name, font_size, font_weight_str):
   from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel
@@ -146,7 +146,7 @@ def click_answer(correct_answer):
 def copy_answer(correct_answer):
   import pyclip
   pyclip.copy(correct_answer)
-  os.system(f"notify-send -a 'smartbot:' 'answer copied to clipboard'")
+  os.system(f"notify-send -a 'smartbot:' 'Copied to clipboard'")
   output.append("copy_answer\n")
   
 if __name__ == "__main__":

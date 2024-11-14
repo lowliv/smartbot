@@ -6,10 +6,23 @@ System Dependancies:
 - hyprshot
 - notify-send
 - any notification manager
-
-Run sudo -b ydotoold --socket-path="$HOME/.ydotool_socket" --socket-own="$(id -u):$(id -g)" before starting
-Put answer choice png in $HOME/.config/smartbot/templates/cirle.png
-Put api-key in environment variable called GPT_KEY
-Put screenscale value in evironment variable called SCREEN_SCALE (defaults to 1)
-
 CSS styles and GPT options can be edited in $HOME/.config/smartbot/config.json
+
+Build:
+- clone repo
+- cd into repo
+- run pipenv shell
+- run pipenv install
+- run pyinstaller --onedir --noconfirm smartbot.py
+- add the following bash script to your path 
+	
+	#!/bin/bash
+	/path_of_smartbot_dir/smartbot "$@"
+
+
+Usage:
+- Run sudo -b ydotoold --socket-path="$HOME/.ydotool_socket" --socket-own="$(id -u):$(id -g)" before starting
+- Put a cropped png of what the mcq option should click in $HOME/.config/smartbot/templates/cirle.png
+- Put api-key in environment variable called GPT_KEY
+- Put screenscale value in evironment variable called SCREEN_SCALE (defaults to 1)
+
