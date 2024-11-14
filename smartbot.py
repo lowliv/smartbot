@@ -1,16 +1,25 @@
 import os
 import sys
 import re
-import base64
 import time
-import cv2
+import json
 import argparse as arg
-import numpy as np
-from openai import OpenAI
-from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel
-from PyQt6.QtGui import QFont
-from PyQt6.QtCore import Qt
 
+def get_font_weight(weight_str):
+  from PyQt6.QtGui import QFont
+  weight_map = {
+    "Thin": QFont.Weight.Thin,
+    "ExtraLight": QFont.Weight.ExtraLight,
+    "Light": QFont.Weight.Light,
+    "Normal": QFont.Weight.Normal,
+    "Medium": QFont.Weight.Medium,
+    "DemiBold": QFont.Weight.DemiBold,
+    "Bold": QFont.Weight.Bold,
+    "ExtraBold": QFont.Weight.ExtraBold,
+    "Black": QFont.Weight.Black
+  }
+  return weight_map.get(weight_str, QFont.Weight.Normal)
+   
 def on_ok_click(window):
   window.close()
   
@@ -18,55 +27,32 @@ def on_cancel_click(window):
   window.close()
   exit()
 
-def get_confirmation():
+def get_confirmation(ok_button_label, cancel_button_label, ok_button_style, cancel_button_style, label_style, window_style, font_name, font_size, font_weight_str):
+  from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel
+  from PyQt6.QtGui import QFont
+  from PyQt6.QtCore import Qt
+  
   app = QApplication(sys.argv)
   window = QWidget()
   window.setWindowTitle("Smartbot")
-  font = QFont("JetBrains Mono", 16, QFont.Weight.Bold)  # Set font to Arial, size 16, bold
   
-  ok = QPushButton("OK")
+  font_weight = get_font_weight(font_weight_str)
+  font = QFont(font_name, font_size, font_weight)
+  
+  ok = QPushButton(ok_button_label)
   ok.setFont(font)
-
   ok.clicked.connect(lambda: on_ok_click(window))
-  ok.setStyleSheet("""
-    QPushButton {
-      border-radius: 0px;
-      background-color: #f93357;
-      color: white;
-      font-size: 16px;
-      padding: 10px;
-      border: none;
-      }
-    """)
+  ok.setStyleSheet(ok_button_style)
   
-  cancel = QPushButton("Cancel")
+  cancel = QPushButton(cancel_button_label)
   cancel.setFont(font)
-
   cancel.clicked.connect(lambda: on_cancel_click(window))
-  cancel.setStyleSheet("""
-    QPushButton {
-      border-radius: 0px;
-      background-color: #f93357;
-      color: white;
-      font-size: 16px;
-      padding: 10px;
-      border: none;
-      }
-    """)
+  cancel.setStyleSheet(cancel_button_style)
 
-  # Set up layout and add button
-  layout = QVBoxLayout()
   label = QLabel("Confirm smartbot usage")
   label.setFont(font)
   label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-  label.setStyleSheet(   
-    """
-    QLabel {
-      color: white;
-      font-weight: bold;
-      background-color: transparent;
-    }
-    """)
+  label.setStyleSheet(label_style)
 
   button_layout = QHBoxLayout()
   button_layout.addWidget(ok)
@@ -78,11 +64,14 @@ def get_confirmation():
   
   window.setLayout(main_layout)
   window.resize(200,200)
-  window.setStyleSheet("background-color: rgba(26, 39, 58, 160)")
+  window.setStyleSheet(window_style)
   window.show()
   app.exec()
   
-def get_answer(prompt):
+def get_answer(prompt, model_str):
+  from openai import OpenAI
+  import base64
+  import cv2
   output.append("get_answer")
   os.system("hyprshot -m active -m window -s -o $PWD -f window.png")
   time.sleep(0.5)
@@ -103,7 +92,7 @@ def get_answer(prompt):
   base64_image = encode_image(image_path)
   
   response = client.chat.completions.create(
-    model="gpt-4o-mini",
+    model= f"{model_str}",
     messages=[
       {
         "role": "user",
@@ -130,6 +119,8 @@ def get_answer(prompt):
   return correct_answer
         
 def click_answer(correct_answer):
+  import numpy as np
+  import cv2
   output.append("click_answer\n")
   output.append(f"int_correct_answer = {correct_answer}")
   screenscale = float(os.environ.get('SCREEN_SCALE',1))
@@ -152,12 +143,12 @@ def click_answer(correct_answer):
       os.system('YDOTOOL_SOCKET="$HOME/.ydotool_socket" ydotool mousemove -a -x ' + str(int(click_x/(2*screenscale))) + "-y " + str(int(click_y/(2*screenscale))))
       os.system('YDOTOOL_SOCKET="$HOME/.ydotool_socket" ydotool click C0')
       
-def type_answer(correct_answer):
-  output.append("type_answer\n")
-  os.system(f"notify-send -a 'smartbot:' 'typing answer in 3 seconds highlight input field'")
-  time.sleep(3)
-  os.system(f"wtype {correct_answer}")
-      
+def copy_answer(correct_answer):
+  import pyclip
+  pyclip.copy(correct_answer)
+  os.system(f"notify-send -a 'smartbot:' 'answer copied to clipboard'")
+  output.append("copy_answer\n")
+  
 if __name__ == "__main__":
   parser = arg.ArgumentParser()
 
@@ -166,40 +157,61 @@ if __name__ == "__main__":
 
   args = parser.parse_args()
 
-  if args.noconfirm == 0:
-    get_confirmation()
-    
   output = []
   output.append(f"arg.absnoconfirm = {args.noconfirm}\n")
   output.append(f"arg.mcq_or_frq = {args.mcq_or_frq}\n")
   
   home_path = os.environ.get('HOME')
-  os.system("mkdir -p $HOME/.cache/smartbot/templates")
-  os.chdir(f"{home_path}/.cache/smartbot")
-  
+  os.system("mkdir -p $HOME/.config/smartbot/templates")
+  os.chdir(f"{home_path}/.config/smartbot")
+  if not os.path.isfile("config.json"):
+    file = open("config.json", "w+")
+    default_config = ['{\n', '  "Prompts": {\n', '    "mcq_prompt": "You are reviewing a multiple choice quiz. An answer may be pre-selected but it could be wrong, so you should ignore it. Answer the multiple choice question by saying the correct answer choice and the number corresponding this answer choice if they were labeled sequentially starting with 1 at the top. Do not use parentheses, or brackets.",\n', '    "frq_prompt": "Answer the question in a short sentence."\n', '  },\n', '  "ButtonLabel": {\n', '    "ok_button": "OK",\n', '    "cancel_button": "Cancel"\n', '  },\n', '  "Style": {\n', '    "label": "QLabel { color: white; font-weight: bold; background-color: transparent; }",\n', '    "window": "background-color: #24273a",\n', '    "ok_button": "QPushButton { border-radius: 0px; background-color: #f93357; color: white; font-size: 16px; padding: 10px; border: none; }",\n', '    "cancel_button": "QPushButton { border-radius: 0px; background-color: #f93357; color: white; font-size: 16px; padding: 10px; border: none; }"\n', '  },\n', '  "Font": {\n', '    "font_name": "JetBrains Mono",\n', '    "font_size": 16,\n', '    "font_weight": "Bold"\n', '  },\n', '  "Model": "gpt-4o-mini"\n', '}\n']
+    file.writelines(default_config)
+    file.close()
+    
+  file = open("config.json", "r")
+  config = json.load(file)
+  file.close()
+  ok_button_label = config["ButtonLabel"]["ok_button"]
+  cancel_button_label = config["ButtonLabel"]["cancel_button"]
+  label_style = config["Style"]["label"]
+  window_style = config["Style"]["window"]
+  ok_button_style = config["Style"]["ok_button"]
+  cancel_button_style = config["Style"]["cancel_button"]
+  mcq_prompt = config["Prompts"]["mcq_prompt"]
+  frq_prompt = config["Prompts"]["frq_prompt"]
+  font_name = config["Font"]["font_name"]
+  font_size = config["Font"]["font_size"]
+  font_weight_str = config["Font"]["font_weight"]
+  model_str = config["Model"]
+    
+  if args.noconfirm == 0:
+    get_confirmation(ok_button_label, cancel_button_label, ok_button_style, cancel_button_style, label_style, window_style, font_name, font_size, font_weight_str)
   if args.mcq_or_frq == "mcq":
     if not os.path.isfile("templates/circle.png"):
-      os.system(f"notify-send -a smartbot: no target circle at .cache/smartbot/templates/circle.png")
-    else:
-      time.sleep(3)
-      prompt = "You are reviewing a multiple choice quiz. An answer may be pre-selected but it could be wrong, so you should ignore it. Answer the multiple choice question by saying the correct answer choice and the number corresponding this answer choice if they were labeled sequentially starting with 1 at the top. Do not use parentheses, or brackets.",
-      answer_list = re.split(', *.', get_answer(prompt))
-      # answer_list = "3 testing answer".split()
-      for n in answer_list:
-        try:
-          number = int(n)
-          if number >= 1 and number <= 5:
-            click_answer(number)
-            break
-        except:
-          continue
+      os.system(f"notify-send -a smartbot: no target circle at .config/smartbot/templates/circle.png")
+    answer_list = re.split(', *.', get_answer(mcq_prompt,model_str))
+    for n in answer_list:
+      try:
+        number = int(n)
+        if number >= 1 and number <= 5 and os.path.isfile("templates/circle.png"):
+          click_answer(number)
+          break
+      except:
+        continue
       
   elif args.mcq_or_frq == "frq":
-    prompt = "Answer the question in a short sentence."
-    correct_answer = get_answer(promp)
-    # correct_answer = "testing"
-    type_answer(correct_answer)
+    correct_answer = get_answer(frq_prompt,model_str)
+    copy_answer(correct_answer)
     
   file = open("output", "w+")
   file.writelines(output)
   file.close()
+  
+# Generate new default_config:
+# file = open("/home/lowliver/.config/smartbot/config.json", "r")
+# o = file.readlines()
+# output = open("/home/lowliver/.config/smartbot/output", "w+")
+# output.write(str(o))
+

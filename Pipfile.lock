@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "c19737683525e5680b71951f1337e88e61ca761b0a2e7099a6a847bce3c8a6c2"
+            "sha256": "af4e3c74791160aa7e3eddd24f6167f01732ff0af8348b238ebb9735ddad5cd3"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -258,6 +258,14 @@
             ],
             "markers": "python_version >= '3.8'",
             "version": "==24.1"
+        },
+        "pyclip": {
+            "hashes": [
+                "sha256:57602047a4ceab709bdcd42f3dde6449a3349b95c16154cfdce27376a2072491",
+                "sha256:a7b7ea2cfad2dd61e86a529af588d006070d3eb0bd32981afaee5215f4604fec"
+            ],
+            "index": "pypi",
+            "version": "==0.7.0"
         },
         "pydantic": {
             "hashes": [
